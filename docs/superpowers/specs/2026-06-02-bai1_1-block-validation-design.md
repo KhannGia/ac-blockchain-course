@@ -92,3 +92,53 @@ Why:
 Alternatives considered:
 - Extract helper functions (cleaner but unnecessary indirection here).
 - Schema-style validation (most extensible, but overkill for bai1_1).
+
+
+Khi dùng toán tử + với một mảng, JavaScript ép mảng về chuỗi bằng Array.prototype.toString() (tương đương array.join(",")), không
+  phải JSON. Hai cách cho kết quả khác hẳn:
+
+  ┌──────────────┬────────────────────────────────┬─────────────────────────┐
+  │ transactions │ JSON.stringify(tx) (test dùng) │ Nối thẳng "" + tx (bẫy) │
+  ├──────────────┼────────────────────────────────┼─────────────────────────┤
+  │ []           │ "[]"                           │ "" (rỗng!)              │
+  ├──────────────┼────────────────────────────────┼─────────────────────────┤
+  │ [{a:1}]      │ '[{"a":1}]'                    │ "[object Object]"       │
+  ├──────────────┼────────────────────────────────┼─────────────────────────┤
+  │ [1,2,3]      │ "[1,2,3]"                      │ "1,2,3"                 │
+  ├──────────────┼────────────────────────────────┼─────────────────────────┤
+  │ ["a","b"]    │ '["a","b"]'                    │ "a,b"                   │
+  └──────────────┴────────────────────────────────┴─────────────────────────┘
+
+  (Hai dòng đầu mình đã chạy thật để xác nhận ở bước trước.)
+
+  3. Hậu quả trên đúng block của bài
+
+  block1 trong test có transactions: []. Hash kỳ vọng được tính với:
+  value = 0 + "2024-01-01T00:00:00Z" + "[]" + "0"
+        = "02024-01-01T00:00:00Z[]0"
+
+  Còn sinh viên nối thẳng mảng:
+  value = 0 + "2024-01-01T00:00:00Z" + "" + "0"      ← mất "[]"
+        = "02024-01-01T00:00:00Z0"
+
+  → Hai chuỗi khác nhau → SHA256 khác nhau → computedHash !== current_hash → isValidBlock(block1) trả về false dù block hoàn toàn hợp
+  lệ.
+
+  Kết quả: dòng console.log("✅ Block 1:", ...) in ra false thay vì true. Sinh viên tưởng logic so sánh của mình sai, loay hoay sửa
+  chỗ khác — trong khi lỗi thật chỉ là quên JSON.stringify mảng.
+
+  4. Vì sao bẫy này "ác"
+
+  - Với transactions: [] (mảng rỗng), nối thẳng ra chuỗi rỗng — rất khó nhận ra vì nhìn không thấy gì sai.
+  - [object Object] cũng là một cái bẫy nổi tiếng: mọi object khác nhau đều ra cùng chuỗi "[object Object]" → mất sạch dữ liệu
+  transaction trong hash.
+
+  5. Bạn đã thoát bẫy
+
+  Lời giải của bạn dùng:
+  JSON.stringify(candidate.transactions)
+  → khớp đúng cách test.ts sinh hash, nên isValidBlock(block1) = true. ✅
+
+  ---
+  Tóm gọn: Bẫy 2 = đề ghi + transactions + khiến người làm nối thẳng mảng, nhưng JS ép mảng bằng toString() ([]→"", [{...}]→"[object
+  Object]") khác hoàn toàn JSON.stringify mà test dùng để sinh current_hash → hash lệch → block hợp lệ bị báo sai.
