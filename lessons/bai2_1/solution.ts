@@ -2,14 +2,22 @@ export class SmartContract {
     private message: string;
 
     constructor(initialMessage: string) {
-        // TODO: initialize the message with initialMessage
+        // Defensive runtime guard: only accept a string, otherwise fall back to "".
+        this.message = isString(initialMessage) ? initialMessage : "";
     }
 
     public updateMessage(newMsg: string): void {
-        // TODO: update the message with newMsg
+        // Silently reject non-string input; keep the previous message (non-throwing).
+        if (isString(newMsg)) {
+            this.message = newMsg;
+        }
     }
 
     public getMessage(): string {
-        // TODO: return the current message
+        return this.message;
     }
+}
+
+function isString(value: unknown): value is string {
+    return typeof value === "string";
 }
