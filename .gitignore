@@ -136,3 +136,9 @@ dist
 .pnp.*
 
 .DS_Store
+
+# Claude Code checkpoint log (đã được *.log bao phủ, ghi rõ cho dễ hiểu)
+.claude/checkpoints.log
+
+# Python virtual environment
+.venv/
