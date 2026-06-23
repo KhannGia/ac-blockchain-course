@@ -67,9 +67,32 @@ contract Attacker {
 // ============================================================
 contract SafeBank {
     // TODO: copy VulnerableBank rồi sửa:
-    //   - withdraw theo Checks-Effects-Interactions (trừ sổ TRƯỚC)
-    //   - thêm modifier nonReentrant và gắn vào withdraw
+    mapping(address => uint256) public balances;
+    bool private locked;
 
+    function deposit() public payable {
+        require(msg.value > 0, "Amount must be > 0");
+        balances[msg.sender] += msg.value;
+    }
+
+    //   - withdraw theo Checks-Effects-Interactions (trừ sổ TRƯỚC)
+    function withdraw(uint256 _amount) public nonReentrant {
+        require(balances[msg.sender] >= _amount, "Insufficient balance");
+        balances[msg.sender] -= _amount; // trừ sổ TRƯỚC khi chuyển tiền
+        (bool ok, ) = msg.sender.call{value: _amount}("");
+        require(ok, "Transfer failed");
+    }
+    //   - thêm modifier nonReentrant và gắn vào withdraw
+    modifier nonReentrant() {
+        require(!locked, "ReentrancyGuard: reentrant call");
+        locked = true;
+        _;
+        locked = false;
+    }
+    function getContractBalance() public view returns (uint256) {
+        return address(this).balance;
+    }
     // Câu hỏi tư duy 2: CEI vs nonReentrant — cách nào trị gốc? Dùng cả hai?
-    // => ...
+    // => CEI là tránh reentrancy bằng thứ tự logic cũng là cách trị gốc, 
+    // nonReentrant là lớp khiên bổ sung bằng mutex lock
 }
