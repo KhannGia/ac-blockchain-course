@@ -1,10 +1,10 @@
-# 🧠 Blockchain Course Template
+#  Blockchain Course Template
 
 Chào mừng bạn đến với khoá học Blockchain dành cho sinh viên năm cuối ngành CNTT.
 
 ---
 
-## 📚 Cấu trúc bài học
+##  Cấu trúc bài học
 
 - `lessons/` – chứa từng bài học riêng biệt
 - Mỗi bài gồm:
